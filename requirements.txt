@@ -1,0 +1,8 @@
+pandas
+numpy
+torch
+transformers
+kagglehub
+scikit-learn
+datasets
+accelerate>=1.1.0
