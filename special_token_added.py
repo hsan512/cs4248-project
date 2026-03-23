@@ -6,7 +6,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForMaskedLM.from_pretrained(model_name)
 
 # Add your custom "Signal" tokens
-new_tokens = ["<USER>", "<URL>"]
+new_tokens = ["<USER>", "<URL>", "<TAG>"]
 tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
 
 # Resize the embedding matrix to make room for 2 new rows
