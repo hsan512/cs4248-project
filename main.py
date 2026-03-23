@@ -198,7 +198,7 @@ def train_model(texts, labels,
 
     # if using a already added special tokens model (like the model after using the special_token_added.py), 
     # remove these 3 lines
-    special_tokens = {"additional_special_tokens": ["<URL>", "<USER>"]}
+    special_tokens = {"additional_special_tokens": ["<URL>", "<USER>", "<TAG>"]}
     tokenizer.add_special_tokens(special_tokens)
     model.resize_token_embeddings(len(tokenizer))
 
@@ -312,6 +312,7 @@ df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 texts = [p[0] for p in df["text"]]
 urls = [p[1] for p in df["text"]]
 users = [p[2] for p in df["text"]]
+tags = [p[3] for p in df["text"]]
 labels = df["sentiment"].tolist()
 
 

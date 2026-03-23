@@ -72,38 +72,55 @@ def extract_urls_usernames_symbols(text):
     text = str(text)
     urls = []
     users = []
+    hashtags = []
 
     # ---------- extract URLs ----------
     url_pattern = r'https?\s*:\s*/\s*/\s*\S+|www[\.,]\S+|www\.\S+'
 
     def replace_url(match):
         original = match.group(0)
-        key = "http"
+        key = "<URL>"
         urls.append(original)
         return f" {key} "
 
     text = re.sub(url_pattern, replace_url, text)
+
+    # ---------- extract emoticons ----------
+    text, emo = extract_emojis_with_placeholders (text)
 
     # ---------- extract usernames ----------
     user_pattern = r'(?<!\w)(?:@\s*[A-Za-z0-9_]+|_+[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*_*)'
 
     def replace_user(match):
         original = match.group(0)
-        key = "@user"
+        key = "<USER>"
         users.append(original)
         return f" {key} "
 
     text = re.sub(user_pattern, replace_user, text)
 
-    return text, urls, users
+    tag_pattern = r'#\d+'
+
+    def replace_hashtag(match):
+        original = match.group(0)
+        key = "<TAG>"
+        users.append(original)
+        return f" {key} "
+
+    text = re.sub(tag_pattern, replace_hashtag, text)
+
+    return text, urls, users, hashtags, emo
 
 
-def restore_placeholders(text, urls, users):
+def restore_placeholders(text, urls, users, hashtags):
     for url in urls:
-        text = text.replace("http", url, 1)
+        text = text.replace("<URL>", url, 1)
 
     for user in users:
-        text = text.replace("@user", user, 1)
+        text = text.replace("<USER>", user, 1)
+
+    for tag in hashtags:
+        text = text.replace("<TAG>", tag, 1)
 
     return text
 
@@ -113,25 +130,22 @@ def clean_text(text):
     text = text.strip()
 
     # preserve urls, usernames, emojis/emoticons
-    text, urls, users = extract_urls_usernames_symbols(text)
-
-    # extract the emojis
-    text, emo = extract_emojis_with_placeholders (text)
+    text, urls, users, hashtags, emo = extract_urls_usernames_symbols(text)
 
     # other cleaning
     text = re.sub(r'[^\x00-\x7F]+', '', text)
     text = re.sub(r"\s{2,}", " ", text)
     text = re.sub(r'\(\s*\)', ' ', text)
+    text = re.sub(r'^[().,\[\]]+', '', text)
     text = text.strip()
 
     # restore the emojis
     if len(emo) != 0:
         text = restore_emojis(text, emo)
-        # print (text)
 
-    return text, urls, users
+    return text, urls, users, hashtags
 
 
 def preprocess_pipeline(text):
-    cleaned_text, urls, users = clean_text(text)
-    return cleaned_text, urls, users
+    cleaned_text, urls, users, hashtags = clean_text(text)
+    return cleaned_text, urls, users, hashtags
