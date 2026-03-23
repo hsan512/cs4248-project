@@ -76,6 +76,7 @@ df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 texts = [p[0] for p in df["text"]]
 urls = [p[1] for p in df["text"]]
 users = [p[2] for p in df["text"]]
+hashtags = [p[3] for p in df["text"]]
 
 labels = df["sentiment"].tolist()
 
