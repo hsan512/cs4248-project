@@ -33,7 +33,7 @@ class RLConfig:
     sft_path: str = "./outputs/sft_only/final"
     classifier_name: str = "./classifier/best_model"
 
-    train_csv: str = "train.csv"
+    train_csv: str = "data/train.csv"
     text_col: str = "sentiment_text"
     output_dir: str = "./outputs/ppo"
 

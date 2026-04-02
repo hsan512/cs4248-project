@@ -25,7 +25,7 @@ df[["text", "username", "url", "hashtags"]] = df["text"].astype(str).progress_ap
 df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 df["sentiment_text"] = df.progress_apply(lambda row: add_sentiment_token(row["text"], row["sentiment"]), axis=1)
 
-df.to_csv("train.csv")
+df.to_csv("data/train.csv")
 
 path = kagglehub.dataset_download("abhi8923shriv/sentiment-analysis-dataset")
 
@@ -35,4 +35,4 @@ df_test[["text", "username", "url", "hashtags"]] = df_test["text"].astype(str).p
 df_test = df_test.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 df_test["sentiment_text"] = df_test.progress_apply(lambda row: add_sentiment_token(row["text"], row["sentiment"]), axis=1)
 
-df_test.to_csv("test.csv")
+df_test.to_csv("data/test.csv")

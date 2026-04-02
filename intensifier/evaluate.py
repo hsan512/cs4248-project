@@ -177,22 +177,6 @@ def distinct_n(texts, n=1):
     return len(uniq) / total if total > 0 else 0.0
 
 
-def safe_preprocess_for_classifier(text):
-    """
-    Apply the same cleaning pipeline used for classifier training, if possible.
-    Falls back to raw text if preprocess_pipeline errors.
-    """
-    try:
-        cleaned = preprocess_pipeline(str(text))
-        if isinstance(cleaned, tuple):
-            # in case your pipeline returns (text, username, url) or similar
-            cleaned = cleaned[0]
-        cleaned = str(cleaned).strip()
-        return cleaned if cleaned else str(text)
-    except Exception:
-        return str(text)
-
-
 def map_true_label_to_binary_id(label: str, neg_idx: int, pos_idx: int):
     norm = normalize_label_name(label)
     if norm in {"negative", "neg"}:
@@ -250,7 +234,7 @@ def classifier_predict_full(model, tokenizer, texts, batch_size=32):
 
     for i in tqdm.tqdm(range(0, len(texts), batch_size), desc="Classifier scoring"):
         batch_texts = texts[i:i + batch_size]
-        batch_texts = [safe_preprocess_for_classifier(x) for x in batch_texts]
+        batch_texts = [x for x in batch_texts]
 
         enc = tokenizer(
             batch_texts,
@@ -323,7 +307,7 @@ def compute_bertscore(references, hypotheses):
 # ==============================
 # Load test dataset
 # ==============================
-df = pd.read_csv("test.csv").dropna(subset=[INPUT_COL, TARGET_COL])
+df = pd.read_csv("data/test.csv").dropna(subset=[INPUT_COL, TARGET_COL])
 
 # Use your existing extraction logic
 tmp = df[INPUT_COL].progress_apply(extract_clean_text)

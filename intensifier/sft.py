@@ -22,7 +22,7 @@ SPECIAL_TOKENS = ["<USER>", "<URL>", "<TAG>"]
 @dataclass
 class SFTConfig:
     model_name: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    train_csv: str = "train.csv"
+    train_csv: str = "data/train.csv"
     input_col: str = "sentiment_text"
     target_col: str = "intensified_text"
     output_dir: str = "./outputs/sft_only"
