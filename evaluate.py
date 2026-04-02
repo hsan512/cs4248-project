@@ -4,7 +4,7 @@ import kagglehub
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from clean_text import preprocess_pipeline
+from utils.clean_text import preprocess_pipeline
 import tqdm
 tqdm.tqdm.pandas()
 
@@ -12,7 +12,7 @@ tqdm.tqdm.pandas()
 # CONFIG
 # ==============================
 # change the name according to your saved model name
-MODEL_NAME = "best_model"
+MODEL_NAME = "./outputs/best_model"
 
 TEXT_COL = "text"
 LABEL_COL = "sentiment"

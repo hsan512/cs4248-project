@@ -43,7 +43,7 @@ from dataclasses import dataclass, field
 from itertools import chain
 
 import datasets
-import evaluate
+import classifier.evaluate as evaluate
 import torch
 from datasets import load_dataset
 

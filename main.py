@@ -1,5 +1,6 @@
-from clean_text import preprocess_pipeline
+from utils.clean_text import preprocess_pipeline
 import torch
+import re
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
@@ -12,8 +13,106 @@ import kagglehub
 import pandas as pd
 from sklearn.metrics import f1_score
 
+from emot import emot
+emo = emot()
+
 import tqdm
 tqdm.tqdm.pandas()
+
+# =========================
+# Emoji / emoticon cleanup
+# =========================
+
+def is_bad_emoticon_context(text: str, start: int, end: int) -> bool:
+    """
+    Filter false-positive emoticons like:
+    - 36.7 %)
+    - 50%)
+    - 12:)
+    """
+    window = text[max(0, start - 6): min(len(text), end + 6)]
+
+    # examples: 36.7 %), 50%), 20 :)
+    if re.search(r"\d+(?:\.\d+)?\s*%\)", window):
+        return True
+
+    if re.search(r"\d+(?:\.\d+)?\s*:\)", window):
+        return True
+
+    if re.search(r"\d+(?:\.\d+)?\s*:-\)", window):
+        return True
+
+    # immediate left-char heuristic
+    left = text[start - 1] if start > 0 else ""
+    if left.isdigit() or left == "%":
+        return True
+
+    return False
+
+
+def extract_emojis_with_placeholders(text):
+    if text is None:
+        return ""
+
+    text = str(text)
+    found = []
+
+    # --- detect unicode emojis ---
+    emoji_info = emo.emoji(text)
+    if emoji_info and "value" in emoji_info and "location" in emoji_info:
+        for mean, loc in zip(emoji_info["mean"], emoji_info["location"]):
+            label = f"*{mean}*" if mean else ""
+            found.append({
+                "start": loc[0],
+                "end": loc[1],
+                "label": label,
+            })
+
+    # --- detect emoticons ---
+    emoticon_info = emo.emoticons(text)
+    if emoticon_info and "mean" in emoticon_info and "location" in emoticon_info:
+        for mean, loc in zip(emoticon_info["mean"], emoticon_info["location"]):
+            if is_bad_emoticon_context(text, loc[0], loc[1]):
+                continue
+            label = f"*{mean}*" if mean else ""
+            found.append({
+                "start": loc[0],
+                "end": loc[1],
+                "label": label,
+            })
+
+    # sort by span, longer match first
+    found.sort(key=lambda x: (x["start"], -(x["end"] - x["start"])))
+
+    # remove overlaps
+    filtered = []
+    occupied_until = -1
+
+    for item in found:
+        if item["start"] < occupied_until:
+            continue
+        filtered.append(item)
+        occupied_until = item["end"]
+
+    # rebuild text with replacements
+    pieces = []
+    last = 0
+
+    for item in filtered:
+        start, end = item["start"], item["end"]
+        label = item["label"]
+
+        pieces.append(text[last:start])
+        pieces.append(f" {label} ")
+        last = end
+
+    pieces.append(text[last:])
+    new_text = "".join(pieces)
+
+    # normalize spacing
+    new_text = re.sub(r"\s+", " ", new_text).strip()
+
+    return new_text
 
 # ==============================
 # Dataset
@@ -288,8 +387,8 @@ def train_model(texts, labels,
         if val_f1 > best_val_f1:
             best_val_f1 = val_f1
             patience_counter = 0
-            model.save_pretrained("best_model")
-            tokenizer.save_pretrained("best_model")
+            model.save_pretrained("./outputs/best_model")
+            tokenizer.save_pretrained("./outputs/best_model")
             print("Saved Best Model")
         else:
             patience_counter += 1
@@ -309,7 +408,7 @@ df = pd.read_csv(f"{path}/train.csv", encoding="utf-8", encoding_errors="replace
 df["text"] = df["text"].astype(str).progress_apply(preprocess_pipeline)
 df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 
-texts = [p[0] for p in df["text"]]
+texts = [extract_emojis_with_placeholders(p[0]) for p in df["text"]]
 urls = [p[1] for p in df["text"]]
 users = [p[2] for p in df["text"]]
 tags = [p[3] for p in df["text"]]
