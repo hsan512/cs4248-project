@@ -14,15 +14,13 @@ from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from rouge_score import rouge_scorer
 from bert_score import score as bertscore_score
 
-from utils.clean_text import preprocess_pipeline
-
 tqdm.tqdm.pandas()
 
 # ==============================
 # CONFIG
 # ==============================
 BASE_MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-GEN_MODEL_PATH = "outputs/ppo_custom/ppo_final"   # SFT / RL adapter path
+GEN_MODEL_PATH = "outputs/sft/final"   # SFT / RL adapter path
 CLS_MODEL_NAME = "classifier/best_model"    # sentiment classifier
 
 INPUT_COL = "sentiment_text"
