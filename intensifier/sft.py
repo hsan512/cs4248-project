@@ -25,7 +25,7 @@ class SFTConfig:
     train_csv: str = "data/train.csv"
     input_col: str = "sentiment_text"
     target_col: str = "intensified_text"
-    output_dir: str = "./outputs/sft_only"
+    output_dir: str = "./outputs/sft"
 
     max_len: int = 512
     lr: float = 2e-5
@@ -336,10 +336,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model_name", type=str, default="TinyLlama/TinyLlama-1.1B-Chat-v1.0")
-    parser.add_argument("--train_csv", type=str, default="train.csv")
+    parser.add_argument("--train_csv", type=str, default="data/train.csv")
     parser.add_argument("--input_col", type=str, default="sentiment_text")
     parser.add_argument("--target_col", type=str, default="intensified_text")
-    parser.add_argument("--output_dir", type=str, default="./outputs/sft_only")
+    parser.add_argument("--output_dir", type=str, default="./outputs/sft")
 
     parser.add_argument("--max_len", type=int, default=512)
     parser.add_argument("--lr", type=float, default=2e-5)
