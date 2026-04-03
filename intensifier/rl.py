@@ -1,7 +1,5 @@
 import os
 import re
-import copy
-import math
 import random
 from dataclasses import dataclass
 from typing import List, Tuple
@@ -30,12 +28,12 @@ emo = emot()
 @dataclass
 class RLConfig:
     base_model: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    sft_path: str = "./outputs/sft_only/final"
-    classifier_name: str = "./classifier/best_model"
+    sft_path: str = "./outputs/sft/final"
+    classifier_name: str = "./outputs/best_model"
 
     train_csv: str = "data/train.csv"
     text_col: str = "sentiment_text"
-    output_dir: str = "./outputs/ppo"
+    output_dir: str = "./outputs/rl"
 
     max_prompt_len: int = 256  # Increased slightly for chat template overhead
     max_new_tokens: int = 256

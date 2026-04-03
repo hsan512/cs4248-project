@@ -4,7 +4,7 @@ import kagglehub
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from utils.clean_text import preprocess_pipeline
+from classifier.utils.clean_text import preprocess_pipeline
 import tqdm
 tqdm.tqdm.pandas()
 

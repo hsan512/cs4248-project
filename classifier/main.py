@@ -1,4 +1,4 @@
-from utils.clean_text import preprocess_pipeline
+from classifier.utils.clean_text import preprocess_pipeline
 import torch
 import re
 import numpy as np

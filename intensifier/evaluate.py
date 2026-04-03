@@ -20,7 +20,7 @@ tqdm.tqdm.pandas()
 # CONFIG
 # ==============================
 BASE_MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-GEN_MODEL_PATH = "outputs/sft/final"   # SFT / RL adapter path
+GEN_MODEL_PATH = "outputs/rl/final"   # SFT / RL adapter path
 CLS_MODEL_NAME = "outputs/best_model"    # sentiment classifier
 
 INPUT_COL = "sentiment_text"
