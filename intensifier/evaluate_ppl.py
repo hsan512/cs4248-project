@@ -23,7 +23,7 @@ CSV_FILES = {
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ==============================
-# CORE PPL ENGINE (FIXED)
+# CORE PPL ENGINE
 # ==============================
 def compute_perplexity(model, tokenizer, texts, batch_size=1, desc="Perplexity"):
     model.eval()
@@ -45,7 +45,7 @@ def compute_perplexity(model, tokenizer, texts, batch_size=1, desc="Perplexity")
         input_ids = enc["input_ids"]
         attn_mask = enc["attention_mask"]
         
-        # FIX: Ensure labels for padding are -100 to be ignored by CrossEntropyLoss
+        # Ensure labels for padding are -100 to be ignored by CrossEntropyLoss
         labels = input_ids.clone()
         labels[attn_mask == 0] = -100 
 
