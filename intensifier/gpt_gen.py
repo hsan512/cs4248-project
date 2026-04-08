@@ -32,29 +32,6 @@ MAX_RETRIES = 8
 BASE_SLEEP = 2.0
 MAX_SLEEP = 60.0
 
-# SYSTEM_PROMPT = """
-# You are rewriting tweets into strongly intensified versions.
-
-# STRICT RULES:
-# - Do NOT add [POS] or [NEG] token at the start
-# - Intensify according to the sentiment token in the input, where [POS] means positive and [NEG] means negative
-# - Keep the original meaning and context
-# - Keep tweet style (informal, emotional, slightly messy)
-
-# EMOTIONS:
-# - You may use ASCII emoticons like :) :( :D :/ :') >:(
-# - DO NOT use emojis
-# - ONLY use ASCII emoticons
-
-# CONSTRAINTS:
-# - Preserve masked swear words like ****
-# - Do NOT add explanations
-# - Output ONLY the rewritten text
-
-# IMPORTANT:
-# - If you accidentally generate emojis, replace them with ASCII emoticons or remove them
-# """.strip()
-
 SYSTEM_PROMPT = """
 # You are rewriting tweets into strongly intensified versions.
 
