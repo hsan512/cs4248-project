@@ -1,6 +1,6 @@
 import pandas as pd
 import kagglehub
-from utils.clean_text import preprocess_pipeline
+from classifier.utils.clean_text import preprocess_pipeline
 from tqdm import tqdm
 tqdm.pandas()
 

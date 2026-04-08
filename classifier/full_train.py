@@ -12,6 +12,7 @@ from transformers import (
 import kagglehub
 import pandas as pd
 from sklearn.metrics import f1_score
+import time
 
 from emot import emot
 emo = emot()
@@ -118,7 +119,7 @@ def extract_emojis_with_placeholders(text):
 # Dataset
 # ==============================
 class TextDataset(Dataset):
-    def __init__(self, texts, labels, tokenizer, max_len=128):
+    def __init__(self, texts, labels, tokenizer, max_len=256):
         self.texts = texts
         self.labels = labels
         self.tokenizer = tokenizer
@@ -250,7 +251,7 @@ def build_optimizer(
 def train_model(texts, labels,
                 model_name="FacebookAI/roberta-base",
                 num_epochs=4,
-                batch_size=128,
+                batch_size=64,
                 patience=2):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -401,20 +402,13 @@ def train_model(texts, labels,
     print("Best Val Acc:", best_val_f1)
 
 
-path = kagglehub.dataset_download("abhi8923shriv/sentiment-analysis-dataset")
+df = pd.read_csv(f"./data/train.csv", encoding="utf-8", encoding_errors="replace").dropna()
 
-df = pd.read_csv(f"{path}/train.csv", encoding="utf-8", encoding_errors="replace").dropna()
-
-df["text"] = df["text"].astype(str).progress_apply(preprocess_pipeline)
+df["text"] = df["text"].astype(str).progress_apply(extract_emojis_with_placeholders)
 df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 
-texts = [extract_emojis_with_placeholders(p[0]) for p in df["text"]]
-urls = [p[1] for p in df["text"]]
-users = [p[2] for p in df["text"]]
-tags = [p[3] for p in df["text"]]
+texts = df["text"].tolist()
 labels = df["sentiment"].tolist()
-
-
 # feel free to delete this part, it was here to check the processed texts easier
 df_processed = pd.DataFrame({
     "text": texts,
@@ -426,4 +420,6 @@ print ("Finished saving the new df.")
 
 
 # train the model
+start = time.time()
 train_model(texts, labels)
+print (f"Training time: {time.time()-start}")

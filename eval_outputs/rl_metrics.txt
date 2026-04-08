@@ -1,0 +1,30 @@
+==================== RL ====================
+
+===== RL Generative Task Evaluation =====
+BLEU:                     0.1601
+ROUGE-1 F1:               0.5210
+ROUGE-2 F1:               0.2878
+ROUGE-L F1:               0.4760
+BERTScore Precision:      0.9189
+BERTScore Recall:         0.9142
+BERTScore F1:             0.9164
+Exact Match:              0.0020
+Distinct-1:               0.1518
+Distinct-2:               0.5193
+Avg Length Ratio:         1.6864
+===== RL Sentiment on Generated Text =====
+Sentiment Accuracy:       0.8992
+Sentiment Macro-F1:       0.6256
+Neutral Leakage Rate:     0.0835
+
+Classification Report (RL):
+              precision    recall  f1-score   support
+
+    negative     0.9706    0.9326    0.9512      1735
+     neutral     0.0000    0.0000    0.0000         0
+    positive     0.9924    0.8671    0.9255      1798
+
+    accuracy                         0.8992      3533
+   macro avg     0.6543    0.5999    0.6256      3533
+weighted avg     0.9817    0.8992    0.9381      3533
+
