@@ -27,6 +27,9 @@ def is_bad_emoticon_context(text: str, start: int, end: int) -> bool:
     if re.search(r"\d+(?:\.\d+)?\s*:-\)", window):
         return True
 
+    if len(set(text[start:end])) <= 1:
+        return True
+
     # immediate left-char heuristic
     left = text[start - 1] if start > 0 else ""
     if left.isdigit() or left == "%":
@@ -34,8 +37,8 @@ def is_bad_emoticon_context(text: str, start: int, end: int) -> bool:
 
     return False
 
-
 def extract_emojis_with_placeholders(text):
+    global emoji_cnt
     if text is None:
         return "", {}
 
@@ -119,9 +122,12 @@ def extract_emojis_with_placeholders(text):
     return new_text, placeholders
 
 
-def restore_emojis(text, emo_map):
+def restore_emojis(text, emo_map, delete = False):
     for key, raw in emo_map.items():
-        text = text.replace(key, raw)
+        if delete:
+            text = text.replace(key, "")
+        else:
+            text = text.replace(key, raw)
     return text
 
 def extract_urls_usernames_symbols(text):
@@ -190,6 +196,20 @@ def restore_placeholders(text, urls, users, hashtags):
 
     return text
 
+def normalise_casing(text, tag = False, allLower = False):
+    tokens = []
+    for token in text.split():
+        if token.isupper() and not allLower:
+            if tag:
+                tokens.append(token.lower() + "_upper")
+            else:
+                tokens.append(token)
+        else:
+            tokens.append(token.lower())
+    return ' '.join(tokens)
+
+def dedup_punctuation(text):
+    return re.sub(r'([^\w\s])\1{2,}', r'\1\1', text)
 
 def clean_text(text):
     text = ftfy.fix_text(str(text))
@@ -198,6 +218,11 @@ def clean_text(text):
     # preserve urls, usernames, emojis/emoticons
     text, urls, users, hashtags, emo = extract_urls_usernames_symbols(text)
 
+    # Keep original casing or... (Comment all below)
+    # text = normalise_casing(text) # lower case everything except all upper
+    # text = normalise_casing(text, True) # lower case everything but upper add _upper tag
+    # text = normalise_casing(text, True, True) # lower case everything
+
     # other cleaning
     text = re.sub(r'[^\x00-\x7F]+', '', text)
     text = re.sub(r"\s{2,}", " ", text)
@@ -205,9 +230,12 @@ def clean_text(text):
     text = re.sub(r'^[().,\[\]]+', '', text)
     text = text.strip()
 
+    # text = dedup_punctuation(text)
+
     # restore the emojis
     if len(emo) != 0:
         text = restore_emojis(text, emo)
+        # text = restore_emojis(text, emo, True) # This deletes emojis instead
 
     return text, urls, users, hashtags
 
