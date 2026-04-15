@@ -12,7 +12,7 @@ EVAL_MODEL_NAME = "meta-llama/Meta-Llama-3-8B"
 OUTPUT_DIR = "eval_outputs"
 MAX_INPUT_LEN = 512 
 PPL_BATCH_SIZE = 4   # Adjust based on VRAM (4-8 is usually safe for 8B model)
-HF_TOKEN = "hf_token" 
+HF_TOKEN = "your_hf_token" 
 
 CSV_FILES = {
     "BASE": os.path.join(OUTPUT_DIR, "base_generations.csv"),
