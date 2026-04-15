@@ -1,0 +1,30 @@
+==================== REFERENCE_TEXT ====================
+
+===== REFERENCE_TEXT Generative Task Evaluation =====
+BLEU:                     0.1148
+ROUGE-1 F1:               0.5013
+ROUGE-2 F1:               0.2809
+ROUGE-L F1:               0.4824
+BERTScore Precision:      0.8807
+BERTScore Recall:         0.9154
+BERTScore F1:             0.8975
+Exact Match:              0.0000
+Distinct-1:               0.1857
+Distinct-2:               0.6545
+Avg Length Ratio:         1.6826
+===== REFERENCE_TEXT Sentiment on Generated Text =====
+Sentiment Accuracy:       0.8888
+Sentiment Macro-F1:       0.6205
+Neutral Leakage Rate:     0.0903
+
+Classification Report (REFERENCE_TEXT):
+              precision    recall  f1-score   support
+
+    negative     0.9686    0.9078    0.9372      1735
+     neutral     0.0000    0.0000    0.0000         0
+    positive     0.9855    0.8704    0.9244      1798
+
+    accuracy                         0.8888      3533
+   macro avg     0.6514    0.5927    0.6205      3533
+weighted avg     0.9772    0.8888    0.9307      3533
+

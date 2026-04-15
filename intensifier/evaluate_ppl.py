@@ -15,7 +15,9 @@ PPL_BATCH_SIZE = 4   # Adjust based on VRAM (4-8 is usually safe for 8B model)
 HF_TOKEN = "your_hf_token" 
 
 CSV_FILES = {
-    "BASE": os.path.join(OUTPUT_DIR, "base_generations.csv"),
+    "INPUT": os.path.join(OUTPUT_DIR, "input_generations.csv"),
+    "REFERENCE_TEXT": os.path.join(OUTPUT_DIR, "reference_generations.csv"),
+    "BASE_MODEL": os.path.join(OUTPUT_DIR, "base_model_generations.csv"),
     "SFT": os.path.join(OUTPUT_DIR, "sft_generations.csv"),
     "RL": os.path.join(OUTPUT_DIR, "rl_generations.csv"),
 }
@@ -98,9 +100,9 @@ def main():
     imdb = load_dataset("stanfordnlp/imdb", split="test")
     ppl_imdb = compute_perplexity(model, tokenizer, imdb["text"][:1000], PPL_BATCH_SIZE, "Ref: IMDb")
     summary_report["GLOBAL_IMDB"] = ppl_imdb
-    # PPL of the human reference text specifically in that file
-    ppl_ref = compute_perplexity(model, tokenizer, df["reference_text"].tolist(), PPL_BATCH_SIZE, f"Ref: {model_key}")
-    summary_report[f"TWEET_Reference"] = ppl_ref
+    # (Note) Per-file reference/base text PPL is not computed here because
+    # the CSV outputs already include the base/reference rows. We only
+    # evaluate the model `generated_text` column for each CSV.
 
     # 2. COMPUTE MODEL GENERATIONS
     print("\n--- Computing Model-Specific Scores ---")
@@ -110,12 +112,20 @@ def main():
             print(f"Skipping {model_key}: File not found at {path}")
             continue
 
-        df = pd.read_csv(path).dropna(subset=["generated_text", "reference_text"])
-        
-        # PPL of the text our model produced
-        ppl_gen = compute_perplexity(model, tokenizer, df["generated_text"].tolist(), PPL_BATCH_SIZE, f"Gen: {model_key}")
-        
-        summary_report[f"{model_key}_Generated"] = ppl_gen
+        df = pd.read_csv(path)
+
+        if "generated_text" not in df.columns:
+            print(f"Skipping {model_key}: 'generated_text' column missing in {path}")
+            continue
+
+        gen_texts = df["generated_text"].dropna().astype(str).tolist()
+        if len(gen_texts) == 0:
+            print(f"Skipping {model_key}: no generated_text rows in {path}")
+            continue
+
+        # PPL of the text our model produced (only `generated_text`)
+        ppl_gen = compute_perplexity(model, tokenizer, gen_texts, PPL_BATCH_SIZE, f"Gen: {model_key}")
+        summary_report[f"{model_key}"] = ppl_gen
 
     # 3. FINAL SUMMARY OUTPUT
     final_output = "\n" + "="*50 + "\n"

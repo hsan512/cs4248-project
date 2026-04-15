@@ -1,0 +1,39 @@
+==================== BASE_MODEL ====================
+
+===== BASE_MODEL Generative Task Evaluation =====
+BLEU:                     0.0962
+ROUGE-1 F1:               0.3628
+ROUGE-2 F1:               0.2786
+ROUGE-L F1:               0.3504
+BERTScore Precision:      0.8360
+BERTScore Recall:         0.8854
+BERTScore F1:             0.8596
+Exact Match:              0.0000
+Distinct-1:               0.0908
+Distinct-2:               0.2865
+Avg Length Ratio:         5.4766
+===== BASE_MODEL Sentiment on Generated Text =====
+Sentiment Accuracy:       0.3793
+Sentiment Macro-F1:       0.3336
+Neutral Leakage Rate:     0.4993
+
+Classification Report (BASE_MODEL):
+              precision    recall  f1-score   support
+
+    negative     0.8481    0.3089    0.4529      1735
+     neutral     0.0000    0.0000    0.0000         0
+    positive     0.7071    0.4472    0.5479      1798
+
+    accuracy                         0.3793      3533
+   macro avg     0.5184    0.2520    0.3336      3533
+weighted avg     0.7764    0.3793    0.5012      3533
+
+
+Confusion Matrix (rows=true, cols=pred) with labels [0, 1, 2]:
+[[536 866 333]
+ [  0   0   0]
+ [ 96 898 804]]
+
+Predicted label counts:
+{'negative': 632, 'neutral': 1764, 'positive': 1137}
+
