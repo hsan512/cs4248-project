@@ -1,5 +1,4 @@
 import torch
-import re
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
@@ -9,109 +8,17 @@ from transformers import (
     get_linear_schedule_with_warmup
 )
 import pandas as pd
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, accuracy_score, classification_report
 import time
 
-from emot import emot
-emo = emot()
+from classifier.utils.clean_text import preprocess_pipeline
 
 import tqdm
 tqdm.tqdm.pandas()
 
-# =========================
-# Emoji / emoticon cleanup
-# =========================
 
-def is_bad_emoticon_context(text: str, start: int, end: int) -> bool:
-    """
-    Filter false-positive emoticons like:
-    - 36.7 %)
-    - 50%)
-    - 12:)
-    """
-    window = text[max(0, start - 6): min(len(text), end + 6)]
-
-    # examples: 36.7 %), 50%), 20 :)
-    if re.search(r"\d+(?:\.\d+)?\s*%\)", window):
-        return True
-
-    if re.search(r"\d+(?:\.\d+)?\s*:\)", window):
-        return True
-
-    if re.search(r"\d+(?:\.\d+)?\s*:-\)", window):
-        return True
-
-    # immediate left-char heuristic
-    left = text[start - 1] if start > 0 else ""
-    if left.isdigit() or left == "%":
-        return True
-
-    return False
-
-
-def extract_emojis_with_placeholders(text):
-    if text is None:
-        return ""
-
-    text = str(text)
-    found = []
-
-    # --- detect unicode emojis ---
-    emoji_info = emo.emoji(text)
-    if emoji_info and "value" in emoji_info and "location" in emoji_info:
-        for mean, loc in zip(emoji_info["mean"], emoji_info["location"]):
-            label = f"*{mean}*" if mean else ""
-            found.append({
-                "start": loc[0],
-                "end": loc[1],
-                "label": label,
-            })
-
-    # --- detect emoticons ---
-    emoticon_info = emo.emoticons(text)
-    if emoticon_info and "mean" in emoticon_info and "location" in emoticon_info:
-        for mean, loc in zip(emoticon_info["mean"], emoticon_info["location"]):
-            if is_bad_emoticon_context(text, loc[0], loc[1]):
-                continue
-            label = f"*{mean}*" if mean else ""
-            found.append({
-                "start": loc[0],
-                "end": loc[1],
-                "label": label,
-            })
-
-    # sort by span, longer match first
-    found.sort(key=lambda x: (x["start"], -(x["end"] - x["start"])))
-
-    # remove overlaps
-    filtered = []
-    occupied_until = -1
-
-    for item in found:
-        if item["start"] < occupied_until:
-            continue
-        filtered.append(item)
-        occupied_until = item["end"]
-
-    # rebuild text with replacements
-    pieces = []
-    last = 0
-
-    for item in filtered:
-        start, end = item["start"], item["end"]
-        label = item["label"]
-
-        pieces.append(text[last:start])
-        pieces.append(f" {label} ")
-        last = end
-
-    pieces.append(text[last:])
-    new_text = "".join(pieces)
-
-    # normalize spacing
-    new_text = re.sub(r"\s+", " ", new_text).strip()
-
-    return new_text
+def preprocess_text(text):
+    return preprocess_pipeline(text)[0]
 
 # ==============================
 # Dataset
@@ -391,11 +298,62 @@ def train_model(texts, labels,
             print("Early stopping")
             break
 
-    print("Best Val Acc:", best_val_f1)
+    print("Best Val Macro-F1:", best_val_f1)
+
+    # ============================================================
+    # Final evaluation: reload best model → report val + test
+    # ============================================================
+    print("\n" + "=" * 60)
+    print("FINAL EVALUATION (best model from ./outputs/best_model_mlm)")
+    print("=" * 60)
+
+    best_model = AutoModelForSequenceClassification.from_pretrained(
+        "./outputs/best_model_mlm"
+    ).to(device)
+    best_model.eval()
+
+    def _evaluate(loader, name):
+        preds_all, labels_all = [], []
+        with torch.no_grad():
+            for batch in loader:
+                batch = {k: v.to(device) for k, v in batch.items()}
+                labs = batch.pop("labels")
+                out = best_model(**batch)
+                preds_all.extend(torch.argmax(out.logits, dim=1).cpu().tolist())
+                labels_all.extend(labs.cpu().tolist())
+        acc = accuracy_score(labels_all, preds_all)
+        f1  = f1_score(labels_all, preds_all, average="macro")
+        print(f"\n[{name}] Accuracy: {acc:.4f}   Macro-F1: {f1:.4f}")
+        print(classification_report(
+            labels_all, preds_all,
+            target_names=[id2label[i] for i in sorted(id2label)]
+        ))
+        return acc, f1
+
+    # ---- Validation ----
+    _evaluate(val_loader, "VAL")
+
+    # ---- Test set (data/test.csv) ----
+    test_df = pd.read_csv("./data/test.csv",
+                          encoding="utf-8", encoding_errors="replace").dropna()
+    test_df["text"] = test_df["text"].astype(str).progress_apply(preprocess_text)
+    test_df = test_df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
+
+    unknown = sorted(set(test_df["sentiment"]) - set(label2id.keys()))
+    if unknown:
+        raise ValueError(f"Unknown labels in test.csv: {unknown}")
+
+    test_texts  = test_df["text"].tolist()
+    test_labels = [label2id[l] for l in test_df["sentiment"].tolist()]
+    test_loader = DataLoader(
+        TextDataset(test_texts, test_labels, tokenizer),
+        batch_size=batch_size, num_workers=4, pin_memory=True,
+    )
+    _evaluate(test_loader, "TEST")
 
 df = pd.read_csv(f"./data/train.csv", encoding="utf-8", encoding_errors="replace").dropna()
 
-df["text"] = df["text"].astype(str).progress_apply(extract_emojis_with_placeholders)
+df["text"] = df["text"].astype(str).progress_apply(preprocess_text)
 df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 
 texts = df["text"].tolist()

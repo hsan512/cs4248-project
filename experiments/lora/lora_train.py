@@ -253,7 +253,41 @@ def main():
     trainer.train()
     print(f"Training time: {time.time() - start:.2f} seconds")
 
-    print("Saving best LoRA adapter and tokenizer...")
+    # ---- Validation metrics (best model already loaded via load_best_model_at_end) ----
+    print("\n" + "=" * 50)
+    print("VALIDATION METRICS (best model on val split)")
+    print("=" * 50)
+    val_metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
+    print(f"Val Accuracy:    {val_metrics['eval_accuracy']:.4f}")
+    print(f"Val Macro F1:    {val_metrics['eval_macro_f1']:.4f}")
+    print(f"Val Weighted F1: {val_metrics['eval_weighted_f1']:.4f}")
+
+    # ---- Test metrics on held-out data/test.csv ----
+    print("\n" + "=" * 50)
+    print("TEST METRICS (data/test.csv)")
+    print("=" * 50)
+    test_df = pd.read_csv("./data/test.csv")
+    if "text" not in test_df.columns or "sentiment" not in test_df.columns:
+        raise ValueError("test.csv must contain 'text' and 'sentiment' columns.")
+    test_df = test_df[["text", "sentiment"]].dropna().reset_index(drop=True)
+    test_df["text"] = test_df["text"].apply(extract_emojis_with_placeholders)
+    test_df = test_df.rename(columns={"sentiment": "label"})
+    test_df["label"] = test_df["label"].astype(str).str.strip().str.lower()
+
+    unknown_test = sorted(set(test_df["label"]) - set(label2id.keys()))
+    if unknown_test:
+        raise ValueError(f"Unknown labels found in test.csv: {unknown_test}")
+    test_df["label"] = test_df["label"].map(label2id).astype(int)
+
+    test_dataset = Dataset.from_pandas(test_df)
+    test_dataset = test_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
+
+    test_metrics = trainer.evaluate(eval_dataset=test_dataset, metric_key_prefix="test")
+    print(f"Test Accuracy:    {test_metrics['test_accuracy']:.4f}")
+    print(f"Test Macro F1:    {test_metrics['test_macro_f1']:.4f}")
+    print(f"Test Weighted F1: {test_metrics['test_weighted_f1']:.4f}")
+
+    print("\nSaving best LoRA adapter and tokenizer...")
     trainer.save_model("./outputs/best_model_lora")
     tokenizer.save_pretrained("./outputs/best_model_lora")
 

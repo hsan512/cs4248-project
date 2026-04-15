@@ -404,7 +404,7 @@ def train_model(texts, labels,
 
 df = pd.read_csv(f"./data/train.csv", encoding="utf-8", encoding_errors="replace").dropna()
 
-df["text"] = df["text"].astype(str).progress_apply(extract_emojis_with_placeholders)
+df["text"] = df["text"].astype(str).progress_apply(preprocess_pipeline)
 df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 
 texts = df["text"].tolist()
