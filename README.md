@@ -52,6 +52,17 @@ Our pipeline consists of the following stages:
 - `mlm_generator.py` – Generate corpus for TAPT  
 - `special_token_added.py` – Add custom tokens  
 - `run_mlm.py` – TAPT training script  
+- `classifier/baselines/` – Baseline sentiment classifiers for comparison
+
+---
+
+## Baselines
+Several baseline sentiment classifiers are included in [classifier/baselines/](classifier/baselines/) to benchmark against the main approach:
+
+- **Logistic Regression** ([logistic_regression.py](classifier/baselines/logistic_regression.py)) – TF-IDF features with a linear classifier
+- **Naive Bayes** ([naive_bayes.py](classifier/baselines/naive_bayes.py)) – Multinomial NB over bag-of-words features
+- **RNN** ([rnn.py](classifier/baselines/rnn.py)) – Trainable embeddings fed into a recurrent classifier
+- **GloVe + LSTM** ([glove_lstm.py](classifier/baselines/glove_lstm.py)) – Pretrained GloVe embeddings with an LSTM classifier
 
 
 ---
