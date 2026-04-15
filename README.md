@@ -56,6 +56,65 @@ Several baseline sentiment classifiers are included in [classifier/baselines/](c
 - **GloVe + LSTM** ([glove_lstm.py](classifier/baselines/glove_lstm.py)) – Pretrained GloVe embeddings with an LSTM classifier
 
 ---
+## Running Supporting Analysis Scripts
+We recommend reading the README files for some of the submodule for detailed instructions on how to run the code and what each script does. Below is a brief overview of the main components.
+
+
+### Classifier Analysis Utilities
+Submodule README: [classifier_analysis/README.md](classifier_analysis/README.md)
+
+This folder contains analysis scripts for understanding dataset characteristics and model prediction behavior.
+
+How to run (from repo root):
+```bash
+python classifier_analysis/corpus_analysis.py
+python classifier_analysis/results_analysis.py
+```
+
+What each script does:
+- `classifier_analysis/corpus_analysis.py`: analyzes corpus-level patterns and highlights interesting examples.
+- `classifier_analysis/results_analysis.py`: analyzes prediction outputs on the test set and reports useful examples/statistics.
+
+### Evaluation Dataset Labeling Pipeline
+
+LLM labelling using a GPT OSS 120B model with medium thinking was performed on the SST-5 and IMDB datasets. The labeling pipeline is implemented in the `evaluate_dataset` submodule, which includes scripts for running sentiment annotation and analyzing the results.
+
+Submodule README: [evaluate_dataset/README.md](evaluate_dataset/README.md)
+
+This folder contains the sentiment labeling and evaluation pipeline using a local vLLM-served model.
+
+How to run labeling:
+```bash
+cd evaluate_dataset
+python run_sentiment_labeling.py --model gpt-120b-medium --datasets sst imdb
+```
+
+How to run analysis:
+```bash
+cd evaluate_dataset
+python analyze_label.py
+```
+
+What each script does:
+- `evaluate_dataset/run_sentiment_labeling.py`: runs LLM-based sentiment annotation for configured datasets and writes labeled outputs + summary metrics into `evaluate_dataset/sentiment_results/`.
+- `evaluate_dataset/analyze_label.py`: computes detailed evaluation metrics from labeled CSV outputs and writes `analysis_summary.csv`.
+- `evaluate_dataset/scrum.sh`: launches the vLLM server job (port in this script must match `API_BASE_URL` in `run_sentiment_labeling.py`).
+
+
+
+## Dependency Notes For Submodules
+
+### LLM Labeling Pipeline
+NOTE: The current data files are zipped to reduce repository size. You will need to unzip them before running the scripts.
+
+The `evaluate_dataset` workflow requires:
+```bash
+pip install openai pandas scikit-learn datasets tqdm
+```
+
+Before running labeling, ensure your vLLM server is running and the API port is consistent between server startup (`scrum.sh`) and `run_sentiment_labeling.py`.
+
+
 
 # Notes
 
