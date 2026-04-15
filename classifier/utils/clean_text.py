@@ -122,9 +122,12 @@ def extract_emojis_with_placeholders(text):
     return new_text, placeholders
 
 
-def restore_emojis(text, emo_map):
+def restore_emojis(text, emo_map, delete = False):
     for key, raw in emo_map.items():
-        text = text.replace(key, raw)
+        if delete:
+            text = text.replace(key, "")
+        else:
+            text = text.replace(key, raw)
     return text
 
 def extract_urls_usernames_symbols(text):
@@ -227,6 +230,7 @@ def clean_text(text):
     # restore the emojis
     if len(emo) != 0:
         text = restore_emojis(text, emo)
+        # text = restore_emojis(text, emo, True) # This deletes emojis instead
 
     return text, urls, users, hashtags
 
