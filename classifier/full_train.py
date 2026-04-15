@@ -9,7 +9,6 @@ from transformers import (
     AutoModelForSequenceClassification,
     get_linear_schedule_with_warmup
 )
-import kagglehub
 import pandas as pd
 from sklearn.metrics import f1_score
 import time
@@ -409,6 +408,7 @@ df = df.dropna(subset=["text"]).drop_duplicates(subset=["text"])
 
 texts = df["text"].tolist()
 labels = df["sentiment"].tolist()
+
 # feel free to delete this part, it was here to check the processed texts easier
 df_processed = pd.DataFrame({
     "text": texts,

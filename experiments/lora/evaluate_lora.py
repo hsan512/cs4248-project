@@ -169,7 +169,7 @@ def main():
     print(f"Loading Base Model ({model_name})...")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    # Add your custom tokens if your trained used them
+    # Add custom tokens
     new_tokens = ["<USER>", "<URL>", "<TAG>"]
     tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
 

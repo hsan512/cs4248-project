@@ -1,5 +1,4 @@
 import torch
-import pandas as pd
 import re
 from datasets import load_dataset
 from sklearn.metrics import accuracy_score, f1_score, classification_report
@@ -179,13 +178,12 @@ def main():
     print(f"Loaded {len(true_labels)} evaluation samples from local dataset.\n")
 
     # ============================================================
-    # 1. EVALUATE BASE MODEL
+    # EVALUATE BASE MODEL
     # ============================================================
     model_name = "FacebookAI/roberta-base"
     print(f"Loading Base Model ({model_name})...")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    # Add your custom tokens if your trained used them
     new_tokens = ["<USER>", "<URL>", "<TAG>"]
     tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
 
@@ -205,7 +203,7 @@ def main():
     base_f1 = f1_score(true_labels, base_preds, average="macro")
 
     # ============================================================
-    # 2. EVALUATE MODEL (Base + LoRA)
+    # EVALUATE MODEL (Base + LoRA)
     # ============================================================
     print("\nAttaching LoRA weights (./outputs/best_model_lora)...")
     model = PeftModel.from_pretrained(base_model, "./outputs/best_model_lora").to(device)
@@ -217,7 +215,7 @@ def main():
     f1 = f1_score(true_labels, preds, average="macro")
 
     # ============================================================
-    # 3. PRINT COMPARISON REPORT
+    # PRINT COMPARISON REPORT
     # ============================================================
     print("\n" + "=" * 70)
     print("LOCAL DATASET EVALUATION REPORT (3-label sst5 classification)")

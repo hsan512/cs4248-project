@@ -2,7 +2,6 @@ import torch
 import re
 from emot import emot
 from datasets import load_dataset
-import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from classifier.utils.clean_text import preprocess_pipeline

@@ -141,7 +141,6 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 id2label = model.config.id2label
 label2id = model.config.label2id
 
-# model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.to(device)
 
 # ==============================

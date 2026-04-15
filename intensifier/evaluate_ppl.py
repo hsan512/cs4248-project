@@ -12,7 +12,7 @@ EVAL_MODEL_NAME = "meta-llama/Meta-Llama-3-8B"
 OUTPUT_DIR = "eval_outputs"
 MAX_INPUT_LEN = 512 
 PPL_BATCH_SIZE = 4   # Adjust based on VRAM (4-8 is usually safe for 8B model)
-HF_TOKEN = "your_hf_token_here" 
+HF_TOKEN = "hf_token" 
 
 CSV_FILES = {
     "BASE": os.path.join(OUTPUT_DIR, "base_generations.csv"),
@@ -112,7 +112,7 @@ def main():
 
         df = pd.read_csv(path).dropna(subset=["generated_text", "reference_text"])
         
-        # PPL of the text your model produced
+        # PPL of the text our model produced
         ppl_gen = compute_perplexity(model, tokenizer, df["generated_text"].tolist(), PPL_BATCH_SIZE, f"Gen: {model_key}")
         
         summary_report[f"{model_key}_Generated"] = ppl_gen

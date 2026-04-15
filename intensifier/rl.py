@@ -17,7 +17,6 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-from tqdm import tqdm
 
 emo = emot()
 
@@ -39,7 +38,6 @@ class RLConfig:
     max_new_tokens: int = 256
 
     batch_size: int = 4
-    mini_batch_size: int = 4
     total_steps: int = 3000
     epochs: int = 1
 
@@ -49,7 +47,6 @@ class RLConfig:
     value_clip_range: float = 0.2
     kl_coef: float = 0.03
     vf_coef: float = 0.5
-    entropy_coef: float = 0.01 # Small entropy to prevent early collapse
     max_grad_norm: float = 1.0
 
     gamma: float = 1.0
@@ -225,7 +222,7 @@ class RewardScorer:
         for i, d in enumerate(directions):
             p_pos = probs[i, self.pos_idx]
             p_neg = probs[i, self.neg_idx]
-            p_neu = probs[i, getattr(self, 'neu_idx', 1)] # Ensure you defined neu_idx in __init__
+            p_neu = probs[i, getattr(self, 'neu_idx', 1)] # Ensure neu_idx in __init__
 
             if d == "POS":
                 # Reward Positive, Penalize Neutral (0.5 weight) and Negative (1.0 weight)
@@ -234,7 +231,7 @@ class RewardScorer:
                 # Reward Negative, Penalize Neutral (0.5 weight) and Positive (1.0 weight)
                 s = p_neg - (0.5 * p_neu) - p_pos
             
-            # Apply repetition penalty from your original code
+            # Apply repetition penalty
             words = cleaned_responses[i].split()
             if len(words) > 0:
                 penalty = (len(words) - len(set(words))) / len(words)
@@ -302,7 +299,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left" # Required for batch generation
 
-    # FIX 2: Memory Alignment
+    # Memory Alignment
     q_cfg = BitsAndBytesConfig(
         load_in_4bit=True, 
         bnb_4bit_quant_type="nf4", 
@@ -339,7 +336,7 @@ def main():
     for step in range(1, cfg.total_steps + 1):
         batch_prompts = random.sample(prompts, k=cfg.batch_size)
 
-        # 1. Rollout
+        # Rollout
         with torch.no_grad():
             p_ids, p_attn, r_ids = generate_batch(policy, tokenizer, batch_prompts, cfg, device)
             full_ids, full_attn, resp_mask = build_full_sequences(p_ids, r_ids, tokenizer.pad_token_id)
@@ -358,7 +355,7 @@ def main():
             kl = old_logps - ref_logps
             rewards = -cfg.kl_coef * kl
 
-            # FIX 3: Precise Terminal Reward Placement
+            # Terminal Reward Placement
             for i in range(full_ids.size(0)):
                 # Find the actual last token of the response (before padding)
                 # resp_mask has 1s for the response tokens
@@ -372,11 +369,11 @@ def main():
             token_mask = resp_mask[:, 1:]
             advantages, returns = compute_gae(rewards, old_values, token_mask, cfg.gamma, cfg.gae_lambda)
             
-            # Whitening Fix: Only whiten if batch std > 0
+            # Whitening
             if advantages.std() > 1e-8:
                 advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        # 2. Update
+        # Update
         for _ in range(cfg.epochs):
             logits, v_full = forward_policy_and_value(policy, value_head, full_ids, full_attn)
             logps = compute_token_logps(logits, full_ids, resp_mask)
@@ -407,13 +404,13 @@ def main():
             checkpoint_dir = os.path.join(cfg.output_dir, f"checkpoint-{step}")
             os.makedirs(checkpoint_dir, exist_ok=True)
             
-            # 1. Save the LoRA adapters (Policy)
+            # Save the LoRA adapters (Policy)
             policy.save_pretrained(checkpoint_dir)
             
-            # 2. Save the Value Head (since it's not part of the LoRA config)
+            # Save the Value Head (since it's not part of the LoRA config)
             torch.save(value_head.state_dict(), os.path.join(checkpoint_dir, "value_head.pt"))
             
-            # 3. Save the tokenizer (so it stays with the model)
+            # Save the tokenizer (so it stays with the model)
             tokenizer.save_pretrained(checkpoint_dir)
             print(f"Checkpoint saved to {checkpoint_dir}")
     # --- After the loop (Final Save) ---

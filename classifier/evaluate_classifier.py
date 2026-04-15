@@ -1,7 +1,6 @@
 import torch
 import re
 from emot import emot
-import kagglehub
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -137,7 +136,6 @@ def predict_test(model, tokenizer, test_texts, batch_size=32):
     clean_texts_list = [str(t) if t is not None else "" for t in test_texts]
 
     for i in tqdm.tqdm(range(0, len(clean_texts_list), batch_size), desc="Predicting"):
-        # Use the cleaned list here!
         batch_texts = clean_texts_list[i:i+batch_size]
 
         encoding = tokenizer(

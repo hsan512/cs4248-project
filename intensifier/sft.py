@@ -2,7 +2,7 @@ import os
 import json
 import argparse
 from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 import pandas as pd
 from datasets import Dataset
@@ -61,7 +61,7 @@ class CompletionOnlyCollator:
             # 1. Decode the whole sequence to find exactly where the text is
             full_decoded = self.tokenizer.decode(instance_ids)
             
-            # 2. Find the character position of your template
+            # 2. Find the character position of the template
             template_start_char = full_decoded.find(self.response_template)
             
             if template_start_char != -1:
@@ -69,7 +69,6 @@ class CompletionOnlyCollator:
                 response_start_char = template_start_char + len(self.response_template)
                 
                 # 3. Map that character position back to a token index
-                # This is the most robust way to handle "merged" tokens
                 tokenized_offsets = self.tokenizer(
                     full_decoded, 
                     return_offsets_mapping=True, 
@@ -314,7 +313,7 @@ def main(cfg: SFTConfig):
         args=training_args,
         train_dataset=train_ds,
         eval_dataset=val_ds,
-        data_collator=data_collator, # This is where the -100 masking happens!
+        data_collator=data_collator,
     )
 
     model.print_trainable_parameters()

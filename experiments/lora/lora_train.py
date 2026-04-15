@@ -120,7 +120,7 @@ class EarlyStoppingVisualizer(TrainerCallback):
         self.best_metric = -float('inf')
 
     def on_evaluate(self, args, state, control, metrics, **kwargs):
-        # The trainer adds 'eval_' prefix to your metric name
+        # The trainer adds 'eval_' prefix to metric name
         current_score = metrics.get(f"eval_{args.metric_for_best_model}")
         
         if current_score is not None:
