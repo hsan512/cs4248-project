@@ -224,10 +224,10 @@ def clean_text(text):
     # text = normalise_casing(text, True, True) # lower case everything
 
     # other cleaning
-    text = re.sub(r'[^\x00-\x7F]+', '', text)
-    text = re.sub(r"\s{2,}", " ", text)
-    text = re.sub(r'\(\s*\)', ' ', text)
-    text = re.sub(r'^[().,\[\]]+', '', text)
+    # text = re.sub(r'[^\x00-\x7F]+', '', text)
+    # text = re.sub(r"\s{2,}", " ", text)
+    # text = re.sub(r'\(\s*\)', ' ', text)
+    # text = re.sub(r'^[().,\[\]]+', '', text)
     text = text.strip()
 
     # text = dedup_punctuation(text)

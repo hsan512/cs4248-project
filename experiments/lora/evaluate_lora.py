@@ -1,8 +1,16 @@
+import numpy as np
 import torch
 import pandas as pd
 import re
 from sklearn.metrics import accuracy_score, f1_score, classification_report
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from datasets import Dataset
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    DataCollatorWithPadding,
+    Trainer,
+    TrainingArguments,
+)
 from peft import PeftModel
 from emot import emot
 
@@ -181,6 +189,88 @@ def main():
     base_f1 = f1_score(true_labels, base_preds, average="macro")
 
     # ============================================================
+    # 1b. TRAIN CLASSIFIER HEAD ONLY (freeze backbone) AND EVALUATE
+    # ============================================================
+    print("\nTraining classifier head only (backbone frozen)...")
+
+    train_df = pd.read_csv("./data/train.csv")
+    if "text" not in train_df.columns or "sentiment" not in train_df.columns:
+        raise ValueError("train.csv must contain 'text' and 'sentiment' columns.")
+    train_df = train_df[["text", "sentiment"]].dropna().reset_index(drop=True)
+    train_df["text"] = train_df["text"].apply(extract_emojis_with_placeholders)
+    train_df["sentiment"] = train_df["sentiment"].astype(str).str.strip().str.lower()
+    unknown = sorted(set(train_df["sentiment"]) - set(label2id.keys()))
+    if unknown:
+        raise ValueError(f"Unknown labels in train.csv: {unknown}")
+    train_df["label"] = train_df["sentiment"].map(label2id).astype(int)
+    train_df = train_df[train_df["text"].str.strip().astype(bool)].reset_index(drop=True)
+
+    train_ds = Dataset.from_pandas(train_df[["text", "label"]])
+    train_ds = train_ds.train_test_split(test_size=0.1, seed=42)
+
+    def tokenize_fn(examples):
+        return tokenizer(examples["text"], truncation=True, max_length=128)
+
+    train_ds = train_ds.map(tokenize_fn, batched=True, remove_columns=["text"])
+
+    # Freeze backbone: only classifier head is trainable
+    for name, param in base_model.named_parameters():
+        param.requires_grad = name.startswith("classifier.")
+
+    trainable = sum(p.numel() for p in base_model.parameters() if p.requires_grad)
+    total = sum(p.numel() for p in base_model.parameters())
+    print(f"Head-only trainable params: {trainable:,} / {total:,} "
+          f"({100 * trainable / total:.3f}%)")
+
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        preds = np.argmax(logits, axis=-1)
+        return {
+            "accuracy": accuracy_score(labels, preds),
+            "macro_f1": f1_score(labels, preds, average="macro"),
+        }
+
+    head_args = TrainingArguments(
+        output_dir="./outputs/head_only_tmp",
+        learning_rate=1e-3,
+        per_device_train_batch_size=64,
+        per_device_eval_batch_size=128,
+        num_train_epochs=5,
+        weight_decay=0.01,
+        eval_strategy="epoch",
+        save_strategy="no",
+        logging_steps=50,
+        warmup_ratio=0.05,
+        load_best_model_at_end=False,
+        report_to="none",
+    )
+
+    head_trainer = Trainer(
+        model=base_model,
+        args=head_args,
+        train_dataset=train_ds["train"],
+        eval_dataset=train_ds["test"],
+        processing_class=tokenizer,
+        data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+        compute_metrics=compute_metrics,
+    )
+
+    head_trainer.train()
+
+    head_val_metrics = head_trainer.evaluate()
+    print(f"Head-only val accuracy: {head_val_metrics['eval_accuracy']:.4f}, "
+          f"macro F1: {head_val_metrics['eval_macro_f1']:.4f}")
+
+    print("\nEvaluating Head-Only Model on local tweet test set...")
+    head_preds = evaluate_model(base_model, tokenizer, texts, device)
+    head_acc = accuracy_score(true_labels, head_preds)
+    head_f1 = f1_score(true_labels, head_preds, average="macro")
+
+    # Restore grads so LoRA attachment below is not affected by frozen flags
+    for param in base_model.parameters():
+        param.requires_grad = True
+
+    # ============================================================
     # 2. EVALUATE MODEL (Base + LoRA)
     # ============================================================
     print("\nAttaching LoRA weights (./outputs/best_model_lora)...")
@@ -199,11 +289,11 @@ def main():
     print("LOCAL DATASET EVALUATION REPORT (3-label tweet classification)")
     print("=" * 70)
 
-    print(f"{'Metric':<15} | {'Base (Untrained Head)':<24} | {'(LoRA)':<20}")
-    print("-" * 70)
-    print(f"{'Accuracy':<15} | {base_acc:<24.4f} | {acc:<20.4f}")
-    print(f"{'F1 Macro':<15} | {base_f1:<24.4f} | {f1:<20.4f}")
-    print("=" * 70)
+    print(f"{'Metric':<12} | {'Base (Untrained Head)':<24} | {'Head-Only Trained':<18} | {'LoRA':<8}")
+    print("-" * 80)
+    print(f"{'Accuracy':<12} | {base_acc:<24.4f} | {head_acc:<18.4f} | {acc:<8.4f}")
+    print(f"{'F1 Macro':<12} | {base_f1:<24.4f} | {head_f1:<18.4f} | {f1:<8.4f}")
+    print("=" * 80)
 
     print("\n[Detailed Report: ]")
     print(
